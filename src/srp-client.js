@@ -1,13 +1,15 @@
+var crypto = require('crypto');
+var jsbn = require('jsbn');
 /*
  * Construct an SRP object with a username,
  * password, and the bits identifying the 
  * group (1024 [default], 1536 or 2048 bits).
  */
-SRPClient = function (username, password, group, hashFn) {
+var SRPClient = function (username, password, group, hashFn) {
   
   // Verify presence of username.
   if (!username)
-    throw 'Username cannot be empty.'
+    throw 'Username cannot be empty.';
     
   // Store username/password.
   this.username = username;
@@ -17,7 +19,9 @@ SRPClient = function (username, password, group, hashFn) {
   this.hashFn = hashFn || 'sha-1';
   
   // Retrieve initialization values.
-  var group = group || 1024;
+  if (!group || !this.initVals[group]) {
+    group = 1024;
+  }
   var initVal = this.initVals[group];
   
   // Set N and g from initialization values.
@@ -63,7 +67,7 @@ SRPClient.prototype = {
   calculateX: function (saltHex) {
     
     // Verify presence of parameters.
-    if (!saltHex) throw 'Missing parameter.'
+    if (!saltHex) throw 'Missing parameter.';
     
     if (!this.username || !this.password)
       throw 'Username and password cannot be empty.';
@@ -73,7 +77,7 @@ SRPClient.prototype = {
     var usernamePasswordHash = this.hash(usernamePassword);
     
     // Calculate the padding for the salt.
-    var spad = (saltHex.length % 2 != 0) ? '0' : '';
+    var spad = (saltHex.length % 2 !== 0) ? '0' : '';
     
     // Calculate the hash of salt + hash(username:password).
     var X = this.hexHash(spad + saltHex + usernamePasswordHash);
@@ -132,7 +136,7 @@ SRPClient.prototype = {
     if (!a) throw 'Missing parameter.';
     
     if (Math.ceil(a.bitLength() / 8) < 256/8)
-      throw 'Client key length is less than 256 bits.'
+      throw 'Client key length is less than 256 bits.';
     
     // Return A as a BigInteger.
     var A = this.g.modPow(a, this.N);
@@ -160,10 +164,7 @@ SRPClient.prototype = {
     
     var aHex = A.toString(16);
     var bHex = B_or_M.toString(16);
-    
-    var array = [aHex, bHex, K];
-
-    return this.paddedHash(array);
+    return this.paddedHash([aHex, bHex, K]);
     
   },
   
@@ -208,12 +209,12 @@ SRPClient.prototype = {
   /* Generate a random big integer */
   srpRandom: function() {
 
-    var words = sjcl.random.randomWords(8,0);
-    var hex = sjcl.codec.hex.fromBits(words);
+    var words = crypto.randomBytes(4*8);
+    var hex = words.toString('hex');
     
     // Verify random number large enough.
     if (hex.length != 64)
-      throw 'Invalid random number size.'
+      throw 'Invalid random number size.';
 
     var r = new BigInteger(hex, 16);
     
@@ -229,13 +230,12 @@ SRPClient.prototype = {
   
   /* Return a random hexadecimal salt */
   randomHexSalt: function() {
-
-    var words = sjcl.random.randomWords(4,0);
-    var hex = sjcl.codec.hex.fromBits(words);
+    var words = crypto.randomBytes(16);
+    var hex = words.toString('hex');
     
     // Verify length of hexadecimal salt.
     if (hex.length != 32)
-      throw 'Invalid salt length.'
+      throw 'Invalid salt length.';
       
     return hex;
     
@@ -273,13 +273,13 @@ SRPClient.prototype = {
     switch (this.hashFn.toLowerCase()) {
       
       case 'sha-256':
-        var s = sjcl.codec.hex.fromBits(
-                sjcl.hash.sha256.hash(str));
+        var s = crypto.createHash('sha256').update(str).digest('hex');
         return this.nZeros(64 - s.length) + s;
       
       case 'sha-1':
+      return 
       default:
-        return calcSHA1(str);
+        return crypto.createHash('sha1').update(str).digest('hex');
       
     }
   },
@@ -291,9 +291,10 @@ SRPClient.prototype = {
     switch (this.hashFn.toLowerCase()) {
 
       case 'sha-256':
-        var s = sjcl.codec.hex.fromBits(
-                sjcl.hash.sha256.hash(
-                sjcl.codec.hex.toBits(str)));
+        var s = crypto.createHash('sha256')
+          .update(new Buffer(str, 'hex'))
+          .digest('hex');
+        
         return this.nZeros(64 - s.length) + s;
 
       case 'sha-1':
@@ -309,7 +310,7 @@ SRPClient.prototype = {
   pack: function(hex) {
     
     // To prevent null byte termination bug
-    if (hex.length % 2 != 0) hex = '0' + hex;
+    if (hex.length % 2 !== 0) hex = '0' + hex;
     
     i = 0; ascii = '';
 
@@ -329,7 +330,7 @@ SRPClient.prototype = {
     if(n < 1) return '';
     var t = this.nZeros(n >> 1);
     
-    return ((n & 1) == 0) ?
+    return ((n & 1) === 0) ?
       t + t : t + t + '0';
   
   },

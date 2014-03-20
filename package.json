@@ -1,0 +1,34 @@
+{
+  "name": "srp-client",
+  "version": "0.2.0",
+  "author": "Syme <team@getsyme.com> (www.",
+  "description": "Secure Remote Password (SRP) Client (Rev 6A - RFC 5054)",
+  "contributors": [
+    {
+      "name": "whodatninja",
+      "url": "http://github.com/whodatninja"
+    }
+  ],
+
+  "main": "index.js",
+
+  "scripts": {
+    "test": "jasmine-node spec/"
+  },
+
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whodatninja/srp-client.git"
+  },
+
+  "license": "MPL-2.0",
+  "readmeFilename": "README.md",
+
+  "dependencies": {
+    "jsbn": "0.0.0"
+  },
+
+  "devDependencies": {
+    "jasmine-node": "1.14.2"
+  }
+}
