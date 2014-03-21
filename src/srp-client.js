@@ -34,10 +34,7 @@ var SRPClient = function (username, password, group, hashFn) {
   this.N = new BigInteger(initVal.N, 16);
   this.g = new BigInteger(initVal.g, 16);
   this.gBn = new BigInteger(initVal.g, 16);
-  
-  // Pre-compute k from N and g.
-  this.k = this.k();
-  
+    
   // Convenience big integer objects for 1 and 2.
   this.one = new BigInteger("1", 16);
   this.two = new BigInteger("2", 16);
@@ -47,6 +44,9 @@ var SRPClient = function (username, password, group, hashFn) {
   this._minHashLength = 64;
   this._nlen = 2 * ((this.N.toString(16).length * 4 + 7) >> 3);
   this._zeros = Array(Math.max(this._minHashLength, this._nlen) + 1).join('0');
+
+  // Pre-compute k from N and g.
+  this.k = this.k();
 };
 
 /*
