@@ -37,13 +37,13 @@ As shown in the examples below, this library accepts 1024, 1536, 2048, 4096, 614
   var srp = new SRPClient(username, password, bits);
 
   // 1. The client generates a random hex salt.
-  var s = srp.randomHexSalt();
+  var salt = srp.randomHexSalt();
   
   // 2. The client calculates its verifier value.
   var v = srp.calculateV(salt);
   
-  // 3. The client sends the username, salt and
-  // verifier to the server, which stores all three.
+  // 3. The client sends the username, salt and verifier to the server, which
+  //    stores all three.
   
   </script>
 
@@ -75,22 +75,30 @@ As shown in the examples below, this library accepts 1024, 1536, 2048, 4096, 614
   var a = srp.srpRandom();
   var A = srp.calculateA(a);
 
-  // 2. The client sends A to the server.
+  // 2. The client sends username and A to the server.
   
-  // 3. The server receives A and generates B.
-  var b = srp.srpRandom();
-  var B = srp.calculateB(b);
+  // 3. The server receives username and A, retrieving the salt and verifier
+  //    previously stored for this username.
 
-  // 4. The client and the server both calculate U.
+  // 4. The server generates B then sends B and the salt to the client.
+  var b = srp.srpRandom();
+  var B = srp.calculateB(b, v);
+
+  // 5. The client and the server both calculate U.
   var u = srp.calculateU(A, B);
 
-  // 5. The client generates its premaster secret.
+  // 6. The client generates its premaster secret and sends it to the server.
   var Sc = srp.calculateS(B, salt, u, a);
   
-  // 6. The server generates its premaster secret.
+  // 7. The server receives the client premaster key, generates the server
+  //    premaster key, and verifies they match before sending the server
+  //    premaster key to the client.
   var Ss = srp.calculateServerS(A, v, u, b);
+  console.log('Server and client secrets match:');
+  console.log(Sc.toString() == Ss.toString());
 
-  // 7. The client and the server verify the secrets.
+  // 8. The client receives the server premaster key and verifies it matches
+  //    the client premaster key.
   console.log('Server and client secrets match:');
   console.log(Sc.toString() == Ss.toString());
 

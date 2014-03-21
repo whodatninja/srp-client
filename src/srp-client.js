@@ -1,12 +1,21 @@
 var crypto = require('crypto');
-var jsbn = require('jsbn');
+var BigInteger = require('jsbn');
 /*
  * Construct an SRP object with a username,
  * password, and the bits identifying the 
  * group (1024 [default], 1536 or 2048 bits).
  */
 var SRPClient = function (username, password, group, hashFn) {
-  
+  // Initialize hash function
+  var okHashFns = ['sha512', 'sha256', 'sha1'];
+  if (hashFn && hashFn.indexOf('-') !== -1) {
+    hashFn = hashFn.split('-').join('');
+  }
+  if (okHashFns.indexOf(hashFn) === -1) {
+    hashFn = okHashFns[0];
+  }
+  this.hashFn = hashFn;
+
   // Verify presence of username.
   if (!username)
     throw 'Username cannot be empty.';
@@ -14,10 +23,7 @@ var SRPClient = function (username, password, group, hashFn) {
   // Store username/password.
   this.username = username;
   this.password = password;
-  
-  // Initialize hash function
-  this.hashFn = hashFn || 'sha-1';
-  
+    
   // Retrieve initialization values.
   if (!group || !this.initVals[group]) {
     group = 1024;
@@ -35,7 +41,12 @@ var SRPClient = function (username, password, group, hashFn) {
   // Convenience big integer objects for 1 and 2.
   this.one = new BigInteger("1", 16);
   this.two = new BigInteger("2", 16);
-  
+
+  // Misc defaults
+  this._saltLength = 32;
+  this._minHashLength = 64;
+  this._nlen = 2 * ((this.N.toString(16).length * 4 + 7) >> 3);
+  this._zeros = Array(Math.max(this._minHashLength, this._nlen) + 1).join('0');
 };
 
 /*
@@ -208,7 +219,7 @@ SRPClient.prototype = {
   
   /* Generate a random big integer */
   srpRandom: function() {
-
+    // word = 4 bytes
     var words = crypto.randomBytes(4*8);
     var hex = words.toString('hex');
     
@@ -230,15 +241,21 @@ SRPClient.prototype = {
   
   /* Return a random hexadecimal salt */
   randomHexSalt: function() {
-    var words = crypto.randomBytes(16);
-    var hex = words.toString('hex');
+    var hex = crypto.randomBytes(16).toString('hex');
     
     // Verify length of hexadecimal salt.
-    if (hex.length != 32)
+    if (hex.length != this._saltLength) {
       throw 'Invalid salt length.';
-      
+    }
     return hex;
-    
+  },
+
+  fakeHexSalt: function(seed, username, minSeed) {
+    minSeed = minSeed || this._saltLength;
+    if (seed.length < minSeed) {
+      throw 'Invalid seed length.';
+    }
+    return crypto.createHash('sha256').update(seed + username).digest('hex').substring(0,32);
   },
   
   /*
@@ -250,17 +267,12 @@ SRPClient.prototype = {
   * is prefixed with 0 to meet N hex width.
   */
   paddedHash: function (array) {
-
-   var nlen = 2 * ((this.N.toString(16).length * 4 + 7) >> 3);
-
    var toHash = '';
-   
    for (var i = 0; i < array.length; i++) {
-     toHash += this.nZeros(nlen - array[i].length) + array[i];
+     toHash += this.nZeros(this._nlen - array[i].length) + array[i];
    }
    
    var hash = new BigInteger(this.hexHash(toHash), 16);
-   
    return hash.mod(this.N);
 
   },
@@ -268,71 +280,23 @@ SRPClient.prototype = {
   /* 
    * Generic hashing function.
    */
-  hash: function (str) {
-
-    switch (this.hashFn.toLowerCase()) {
-      
-      case 'sha-256':
-        var s = crypto.createHash('sha256').update(str).digest('hex');
-        return this.nZeros(64 - s.length) + s;
-      
-      case 'sha-1':
-      return 
-      default:
-        return crypto.createHash('sha1').update(str).digest('hex');
-      
-    }
+  hash: function (data) {
+    var s = crypto.createHash(this.hashFn).update(data).digest('hex');
+    return this.nZeros(64 - s.length, 0) + s;
   },
   
   /*
    * Hexadecimal hashing function.
    */
   hexHash: function (str) {
-    switch (this.hashFn.toLowerCase()) {
-
-      case 'sha-256':
-        var s = crypto.createHash('sha256')
-          .update(new Buffer(str, 'hex'))
-          .digest('hex');
-        
-        return this.nZeros(64 - s.length) + s;
-
-      case 'sha-1':
-      default:
-        return this.hash(this.pack(str));
-
-    }
+    var buf = new Buffer(str, 'hex');
+    return this.hash(new Buffer(str, 'hex'));
   },
-  
-  /*
-   * Hex to string conversion.
-   */
-  pack: function(hex) {
     
-    // To prevent null byte termination bug
-    if (hex.length % 2 !== 0) hex = '0' + hex;
-    
-    i = 0; ascii = '';
-
-    while (i < hex.length/2) {
-      ascii = ascii+String.fromCharCode(
-      parseInt(hex.substr(i*2,2),16));
-      i++;
-    }
-
-    return ascii;
-
-  },
-  
   /* Return a string with N zeros. */
   nZeros: function(n) {
-    
-    if(n < 1) return '';
-    var t = this.nZeros(n >> 1);
-    
-    return ((n & 1) === 0) ?
-      t + t : t + t + '0';
-  
+    n = Math.min(Math.max(n, 0), this._zeros.length);
+    return this._zeros.substr(0, n);
   },
   
   /*
