@@ -225,7 +225,7 @@ SRPClient.prototype = {
     var hex = words.toString('hex');
     
     // Verify random number large enough.
-    if (hex.length != 64)
+    if (hex.length != this._saltLength)
       throw 'Invalid random number size.';
 
     var r = new BigInteger(hex, 16);
@@ -256,7 +256,7 @@ SRPClient.prototype = {
     if (seed.length < minSeed) {
       throw 'Invalid seed length.';
     }
-    return crypto.createHash('sha256').update(seed + username).digest('hex').substring(0,32);
+    return crypto.createHash(this.hashFn).update(seed + username).digest('hex').substring(0,32);
   },
   
   /*
@@ -276,6 +276,10 @@ SRPClient.prototype = {
    var hash = new BigInteger(this.hexHash(toHash), 16);
    return hash.mod(this.N);
 
+  },
+
+  parseBigInt: function(str) {
+    return new BigInteger(str);
   },
 
   /* 
