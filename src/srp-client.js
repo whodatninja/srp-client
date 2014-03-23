@@ -221,11 +221,10 @@ SRPClient.prototype = {
   /* Generate a random big integer */
   srpRandom: function() {
     // word = 4 bytes
-    var words = crypto.randomBytes(4*8);
-    var hex = words.toString('hex');
+    var hex = crypto.randomBytes(4*8).toString('hex');
     
     // Verify random number large enough.
-    if (hex.length != this._saltLength)
+    if (hex.length != this._minHashLength)
       throw 'Invalid random number size.';
 
     var r = new BigInteger(hex, 16);
