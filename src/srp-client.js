@@ -27,7 +27,7 @@ var SRPClient = function (username, password, group, hashFn) {
     
   // Retrieve initialization values.
   if (!group || !this.initVals[group]) {
-    group = 1024;
+    group = 2048;
   }
   var initVal = this.initVals[group];
   
@@ -285,8 +285,8 @@ SRPClient.prototype = {
    * Generic hashing function.
    */
   hash: function (data) {
-    var s = crypto.createHash(this.hashFn).update(data).digest('hex');
-    return this.nZeros(64 - s.length, 0) + s;
+    return crypto.createHash(this.hashFn).update(data).digest('hex');
+    // return this.nZeros(64 - s.length) + s;
   },
   
   /*
