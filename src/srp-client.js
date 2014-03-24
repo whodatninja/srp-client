@@ -277,8 +277,9 @@ SRPClient.prototype = {
 
   },
 
-  parseBigInt: function(str) {
-    return new BigInteger(str);
+  parseBigInt: function(str, radix) {
+    radix = radix || 10;
+    return new BigInteger(str, radix);
   },
 
   /* 
