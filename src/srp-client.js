@@ -1,5 +1,5 @@
 var crypto = require('crypto');
-var Buffer = require('buffer/').Buffer;
+var Buffer = require('buffer').Buffer;
 var BigInteger = require('jsbn');
 /*
  * Construct an SRP object with a username,
