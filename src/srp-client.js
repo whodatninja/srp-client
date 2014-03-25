@@ -498,4 +498,4 @@ SRPClient.prototype = {
   
 };
 
-module.export = SRPClient;
+module.exports = SRPClient;
