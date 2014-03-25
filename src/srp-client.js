@@ -294,7 +294,7 @@ SRPClient.prototype = {
    * Hexadecimal hashing function.
    */
   hexHash: function (str) {
-    var buf = new Buffer(str, 'hex');
+    // var buf = new Buffer(str, 'hex');
     return this.hash(new Buffer(str, 'hex'));
   },
     
@@ -497,3 +497,5 @@ SRPClient.prototype = {
   }
   
 };
+
+module.export = SRPClient;
