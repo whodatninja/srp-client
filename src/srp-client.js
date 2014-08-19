@@ -40,6 +40,8 @@ var SRPClient = function (username, password, group, hashFn) {
   this.one = new BigInteger("1", 16);
   this.two = new BigInteger("2", 16);
 
+  this.two_e255 = this.two.pow(256-1);
+
   // Misc defaults
   this._saltLength = 32;
   this._minHashLength = 64;
@@ -138,6 +140,14 @@ SRPClient.prototype = {
 
   },
   
+  calculatea: function() {
+    var a = this.srpRandom();
+    if (a.compareTo(this.two_e255) === -1) {
+      a = a.add(this.two_e255);
+    }
+    return a;
+  },
+
   /*
    * 2.5.4 Calculate the client's public value A = g^a % N,
    * where a is a random number at least 256 bits in length.
@@ -295,6 +305,9 @@ SRPClient.prototype = {
    */
   hexHash: function (str) {
     // var buf = new Buffer(str, 'hex');
+    if (str.length % 2 === 1) {
+      str = '0' + str;
+    }
     return this.hash(new Buffer(str, 'hex'));
   },
     

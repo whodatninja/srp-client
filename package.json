@@ -1,6 +1,6 @@
 {
   "name": "srp-client",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": "Syme <team@getsyme.com> (www.",
   "description": "Secure Remote Password (SRP) Client (Rev 6A - RFC 5054)",
   "contributors": [
